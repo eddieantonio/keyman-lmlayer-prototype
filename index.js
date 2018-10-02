@@ -5,40 +5,90 @@ const Worker = require('tiny-worker');
  */
 exports.LMLayer = class LMLayer {
   constructor() {
-    // Worker state
-    this._worker = new Worker('lmlayer.js');
-    this._worker.onmessage = this._onmessage.bind(this);
-
-    // Keep track of individual requests to make a nice async/await API.
-    this._promises = new PromiseStore;
-
-    // Keep track of tokens.
-    this._currentToken = Number.MIN_SAFE_INTEGER;
-
-    // State related to model initialization and configuration.
-    this._configuration = null;
-    this._resolveInitialized = null;
+    // LMLayer is a shell that exists in two states:
+    // worker is "not ready" or the worker is ready and we can send
+    // predictions.
+    let worker = new Worker('lmlayer.js');
+    this._state = new _UninitializedLMLayer(worker, (configuration) => {
+      this._state = new _InitializedLMLayer(worker, configuration);
+    });
   }
 
   /**
    * [async] Waits for the model's initialization.
    */
   initialize() {
-    if (this._configuration) {
-      return Promise.resolve(this._configuration);
-    }
-
-    // This means we're still waiting for the ready signal from
-    // the model.
-    return new Promise((resolve, _reject) => {
-      this._resolveInitialized = resolve;
-    });
+    return this._state.initialize();
   }
 
   /**
    * [async] Sends a context, transform, and token to the LMLayer.
    */
   predictWithContext({transform, context, customToken}) {
+    return this._state.predict({transform, context, customToken});
+  }
+};
+
+
+/**
+ * LMLayer state before we've received the 'ready' message.
+ */
+class _UninitializedLMLayer {
+  constructor(worker, onReady) {
+    this._worker = worker;
+    this._promise = new Promise((resolve, _reject) => {
+      this._resolveInitialized = resolve;
+      worker.onmessage = (event) => {
+        let {message, configuration} = event.data;
+        if (message !== 'ready') {
+          throw new Error(`Expected 'ready' message; instead got: ${message}`);
+        }
+
+        onReady(configuration);
+        resolve(configuration);
+      };
+    });
+  }
+
+  initialize() {
+    // This means we're still waiting for the ready signal from
+    // the model.
+    return this._promise;
+  }
+
+  predict(_args) {
+    return Promise.reject(new Error('LMLayer is uninitialized'));
+  }
+}
+
+
+/**
+ * LMLater state after we've recieved the 'ready' message.
+ */
+class _InitializedLMLayer {
+  constructor(worker, configuration) {
+    this._worker = worker;
+    this._worker.onmessage = this._onmessage.bind(this);
+    this.configuration = configuration;
+
+    // Keep track of individual requests to make a nice async/await API.
+    this._promises = new PromiseStore;
+
+    // Keep track of tokens.
+    this._currentToken = Number.MIN_SAFE_INTEGER;
+  }
+
+  /**
+   * [async] Waits for the model's initialization.
+   */
+  initialize() {
+    return Promise.resolve(this._configuration);
+  }
+
+  /**
+   * [async] Sends a context, transform, and token to the LMLayer.
+   */
+  predict({transform, context, customToken}) {
     let token = customToken === undefined ? this._nextToken() : customToken;
 
     return new Promise((resolve, reject) => {
@@ -48,7 +98,6 @@ exports.LMLayer = class LMLayer {
       });
     });
   }
-
 
   /**
    * Send a message (a "cast") over to the Web Worker.
@@ -91,7 +140,8 @@ exports.LMLayer = class LMLayer {
     }
     return token;
   }
-};
+}
+
 
 
 /**
