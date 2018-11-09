@@ -7,12 +7,27 @@
 // https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-lib-
 
 type PostMessage = typeof DedicatedWorkerGlobalScope.prototype.postMessage;
+type ModelFactory = (c: RequestedConfiguration) => Model;
 
 // TODO: In a DedicatedWorkerGlobalScope.
 interface LMLayerWorkerGlobalScope extends DedicatedWorkerGlobalScope {
   registerModel(factory: ModelFactory): void;
 }
 
+/**
+ * REFACTOR PLAN:
+ * 1. onMessage = instance.onMessage
+ *  -> still deals with globals, but onMessage is instance variable.
+ * 2. embed onMessageWhenUninitialized
+ *  -> use global cast
+ * 3. embed loadModel
+ * 4. mock importScript!
+ * 5. embed transitionToReadyState()
+ *  -> use global cast
+ * 
+ * n - 1. all for postMessage to be injected
+ * n. create .install() method.
+ */
 
 /**
  * Handles the protocol for communicating with the keyboard.
@@ -48,8 +63,6 @@ class _LMLayer {
  * The function that handles messages from the keyboard.
  */
 let onMessage = onMessageWhenUninitialized;
-
-type ModelFactory = (c: RequestedConfiguration) => Model;
 
 /**
  * When defined by registerModel(), you can call this function to instantiate
@@ -154,7 +167,7 @@ function cast(message: MessageKind, parameters: {}) {
 /**
  * Loads the model from a separate file.
  */
-function loadModel(path : string , configuration: RequestedConfiguration) {
+function loadModel(path: string , configuration: RequestedConfiguration) {
   importScripts(path);
   /**
    * The model MUST call registerModel() which ultimately defines
