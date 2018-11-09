@@ -6,30 +6,12 @@
 
 // https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-lib-
 
-type Weight = number;
-
 // TODO: In a DedicatedWorkerGlobalScope.
 interface LMLayerWorkerGlobalScope extends DedicatedWorkerGlobalScope {
   registerModel(factory: ModelFactory): void;
 }
 
 
- /**
-  * TODO: ...
-  */
-interface Model {
-  readonly configuration: Configuration;
-  predict(...args: any): InternalSuggestion[];
-}
-
-/**
- * TODO: ...
- */
-interface InternalSuggestion {
-  transform: Transform;
-  displayAs?: string;
-  weight: Weight;
-}
 
 type PostMessage = typeof DedicatedWorkerGlobalScope.prototype.postMessage;
 
