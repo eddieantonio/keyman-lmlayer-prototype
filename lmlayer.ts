@@ -13,16 +13,6 @@ interface LMLayerWorkerGlobalScope extends DedicatedWorkerGlobalScope {
   registerModel(factory: ModelFactory): void;
 }
 
-interface RequestedConfiguration {
-  // TODO
-}
-
-interface Configuration {
-  /**
-   * TODO: ...
-   */
-  leftContextCodeUnits: number;
-}
 
  /**
   * TODO: ...

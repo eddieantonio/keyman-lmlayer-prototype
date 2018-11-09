@@ -35,3 +35,20 @@ interface Transform {
    */
   deleteRight?: number;
 }
+
+/**
+ * TODO: What kind of configuration is this?
+ */
+interface RequestedConfiguration {
+  // TODO
+}
+
+/**
+ * TODO: What kind of configuration is this?
+ */
+interface Configuration {
+  /**
+   * TODO: ...
+   */
+  leftContextCodeUnits: number;
+}
