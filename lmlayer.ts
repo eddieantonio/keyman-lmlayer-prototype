@@ -6,14 +6,13 @@
 
 // https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-lib-
 
+type PostMessage = typeof DedicatedWorkerGlobalScope.prototype.postMessage;
+
 // TODO: In a DedicatedWorkerGlobalScope.
 interface LMLayerWorkerGlobalScope extends DedicatedWorkerGlobalScope {
   registerModel(factory: ModelFactory): void;
 }
 
-
-
-type PostMessage = typeof DedicatedWorkerGlobalScope.prototype.postMessage;
 
 /**
  * Handles the protocol for communicating with the keyboard.
@@ -24,8 +23,9 @@ type PostMessage = typeof DedicatedWorkerGlobalScope.prototype.postMessage;
  */
 class _LMLayer {
   handleMessage: (this: _LMLayer, e: MessageEvent) => void;
+  // TODO: make postMessage injectable. 
 
-  constructor(postMessage: PostMessage = (self as DedicatedWorkerGlobalScope).postMessage) {
+  constructor() {
     this.handleMessage = this.onMessageWhenUninitialized.bind(self);
   }
 
@@ -176,5 +176,3 @@ if (typeof global !== 'undefined') {
   Object.setPrototypeOf(self, globalPrototype);
   Object.setPrototypeOf(global, self);
 }
-
-/*global importScripts*/
