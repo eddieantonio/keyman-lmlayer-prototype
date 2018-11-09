@@ -41,6 +41,37 @@ interface InternalSuggestion {
   weight: Weight;
 }
 
+type PostMessage = typeof DedicatedWorkerGlobalScope.prototype.postMessage;
+
+/**
+ * Handles the protocol for communicating with the keyboard.
+ *
+ * A few methods can be easily mocked for testing:
+ *
+ *   #postMessage() -- analogous to DedicatedWorkerGlobalScope#postMessage()
+ */
+class _LMLayer {
+  handleMessage: (this: _LMLayer, e: MessageEvent) => void;
+
+  constructor(postMessage: PostMessage = (self as DedicatedWorkerGlobalScope).postMessage) {
+    this.handleMessage = this.onMessageWhenUninitialized.bind(self);
+  }
+
+  onMessage(event: MessageEvent) {
+    const {message} = event.data;
+    if (!message) {
+      throw new Error(`Message did not have a 'message' attribute: ${event.data}`);
+    }
+
+    /* Delegate to the current onMessage() handler. */
+    return onMessage(event);
+  }
+
+  protected onMessageWhenUninitialized(event: MessageEvent): void {
+    onMessageWhenUninitialized(event);
+  }
+}
+
 /**
  * The function that handles messages from the keyboard.
  */
@@ -63,20 +94,14 @@ let createModel: ModelFactory | undefined;
   createModel = modelFactory;
 };
 
+let _lmLayer = new _LMLayer();
+
 /**
  * Handles messages from the keyboard.
  *
  * Does some error checking, then delegates to onMessage().
  */
-(self as DedicatedWorkerGlobalScope).onmessage = function (event) {
-  const {message} = event.data;
-  if (!message) {
-    throw new Error(`Message did not have a 'message' attribute: ${event.data}`);
-  }
-
-  /* Delegate to the current onMessage() handler. */
-  return onMessage(event);
-};
+(self as DedicatedWorkerGlobalScope).onmessage = _lmLayer.onMessage.bind(_lmLayer);
 
 /**
  * Handles message when uninitialized.
