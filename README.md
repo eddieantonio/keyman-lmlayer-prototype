@@ -402,3 +402,13 @@ TODO
  - [ ] LOGLIKEIHOOD IN THE TRANSFORM!
  - [ ] `possibleTransforms` where `transform` is an alias for `possibleTransforms[0]`
  - [ ] Use [puppeteer](https://github.com/GoogleChrome/puppeteer)?
+
+License
+=======
+
+Copyright © 2018 National Research Council Canada.
+
+Distributed under the terms of the MIT License (MIT). See `LICENSE`
+for details.
+
+
